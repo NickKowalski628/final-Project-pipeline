@@ -9,6 +9,20 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: admin
+          MYSQL_DATABASE: crudusers
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,9 +35,13 @@ jobs:
       - name: Build with Maven
         run: mvn -B clean package -DskipTests
 
+      - name: Wait for MySQL
+        run: sleep 20  
+
       - name: Smoke Test Application
         run: |
-          java -jar target/rest-0.0.1-SNAPSHOT.jar &
-          sleep 30
+          # Start the Spring Boot app with the 'ci' profile
+          java -jar target/rest-0.0.1-SNAPSHOT.jar --spring.profiles.active=ci &
+          sleep 30  # wait for the app to start
           curl -f http://localhost:8080/ || exit 1
           echo "Smoke test passed!"
