@@ -1,15 +1,14 @@
+name: Build and Test
+
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     services:
       mysql:
         image: mysql:8.0
@@ -25,10 +24,9 @@ jobs:
           --health-retries=5
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up JDK 17
+      - name: Set up Java
         uses: actions/setup-java@v3
         with:
           java-version: 17
@@ -36,13 +34,13 @@ jobs:
 
       - name: Wait for MySQL to be ready
         run: |
-          echo "Waiting for MySQL to start..."
-          until mysql -h mysql -P 3306 -u root -padmin -e "SELECT 1"; do
+          echo "Waiting for MySQL..."
+          until mysql -h 127.0.0.1 -P 3306 -uroot -padmin -e "SELECT 1"; do
             sleep 2
           done
 
       - name: Build with Maven
-        run: mvn clean install --batch-mode
+        run: mvn clean verify -DskipTests=false
 
-      - name: Run tests
-        run: mvn test --batch-mode
+      - name: Run Tests
+        run: mvn test
